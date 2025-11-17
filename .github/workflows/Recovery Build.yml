@@ -6,7 +6,7 @@ on:
       MANIFEST_BRANCH:
         description: Manifest Branch
         required: true
-        default: v3_9.0
+        default: v3_10.0
       DEVICE_TREE_URL:
         description: Device Tree URL
         required: true
