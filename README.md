@@ -1,6 +1,6 @@
 # Use Github Actions to compile Custom Recovery
 ```
-Supports TWRP, OrangeFox, PBRP & SHRP compilation and production
+Supports TWRP, OrangeFox, PBRP & SHRP (ONLY TWRP IS TESTED YET SHRP DOESNT WORK FOR ANDROID 10/Q (May not work for others too)) compilation and production
 ```
 ---
 
