@@ -10,7 +10,7 @@ on:
       DEVICE_TREE_URL:
         description: Device Tree URL
         required: true
-        default: https://github.com/SHRP-Devices/device_samsung_d2x
+        default: https://github.com/burn-sie/twrp_device_lenovo_YTX705
       DEVICE_TREE_BRANCH:
         description: Device Tree Branch
         required: true
@@ -18,11 +18,11 @@ on:
       DEVICE_PATH:
         description: Path the device tree should be synced to, relative to source root
         required: true
-        default: device/samsung/d2x
+        default: device/lenovo/YTX705
       DEVICE_MAKEFILE:
         description: 'Name of device-specific makefile from tree (format: <PREFIX>_<DEVICE_NAME>)'
         required: true
-        default: omni_d2x
+        default: twrp_YTX705
       BUILD_TARGET:
         type: choice
         description: Partition containing recovery ramdisk
