@@ -1,36 +1,36 @@
-name: Recovery Build
+Name: Recovery Build
 
 on:
   workflow_dispatch:
     inputs:
       MANIFEST_BRANCH:
         type: choice
-        description: Manifest Branch
+        description: Manifest Branch (Use '9.0' or '11' for Android 10/Q support)
         options:
-        - 12.1
-        - 11
-        - 9.0
-        - 8.1
-        - 7.1
-        - 6.0
+        - '12.1' # <--- QUOTED
+        - '11'   # <--- QUOTED
+        - '9.0'  # <--- QUOTED
+        - '8.1'  # <--- QUOTED
+        - '7.1'  # <--- QUOTED
+        - '6.0'  # <--- QUOTED
         required: true
-        default: 12.1
+        default: '9.0' # <--- QUOTED and SET for compatibility
       DEVICE_TREE_URL:
         description: Device Tree URL
         required: true
-        default: https://github.com/TeamWin/android_device_asus_I003D
+        default: https://github.com/burn-sie/twrp_device_lenovo_YTX705 # <--- SET for YT-X705X
       DEVICE_TREE_BRANCH:
         description: Device Tree Branch
         required: true
-        default: android-12.1
+        default: 'android-9.0' # <--- QUOTED and SET to repo's branch
       DEVICE_PATH:
         description: Path the device tree should be synced to, relative to source root
         required: true
-        default: device/asus/I003D
+        default: device/lenovo/YTX705 # <--- SET for YT-X705X
       DEVICE_NAME:
         description: Device Name from tree (should match name on twrp_<DEVICE_NAME>.mk)
         required: true
-        default: I003D
+        default: YTX705 # <--- SET for YT-X705X
       REPOPICK_PATCHES:
         description: (Optional) Gerrit commit numbers separated by a space to be included in the build (leave blank if not using)
         type: string
@@ -118,6 +118,7 @@ jobs:
         cd workspace
         git config --global user.name "${GITHUB_ACTOR}"
         git config --global user.email "${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
+        # Using minimal-manifest-twrp to resolve sync error
         repo init --depth=1 -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_${{ steps.buildtree.outputs.value }}.git -b twrp-${{ inputs.MANIFEST_BRANCH }}
           
     - name: Repo Sync
@@ -181,6 +182,7 @@ jobs:
         steps.buildtree.outputs.value == 'omni'
         || steps.syncdevicedeps.outcome == 'failure'
       run: |
+        # Note: 'omni' dependencies script path might need adjustment based on the repo structure.
         bash ${GITHUB_WORKSPACE}/scripts/convert.sh ${{ inputs.DEVICE_PATH }}/${{ steps.buildtree.outputs.value }}.dependencies
         repo sync -j$(nproc --all)
       working-directory: workspace
@@ -198,19 +200,19 @@ jobs:
       if: inputs.RECOVERY_INSTALLER == true && inputs.MANIFEST_BRANCH != '6.0' && inputs.BUILD_TARGET != 'vendor_boot'
       run: |
         case ${{ inputs.MANIFEST_BRANCH }} in
-          7.1)
+          '7.1')
             patchNum=5080
             ;;
-          8.1)
+          '8.1')
             patchNum=5079
             ;;
-          9.0)
+          '9.0')
             patchNum=5037
             ;;
-          11)
+          '11')
             patchNum=4964
             ;;
-          12.1)
+          '12.1')
             patchNum=5445
             ;;
         esac
@@ -266,3 +268,4 @@ jobs:
           Target: ${{ inputs.BUILD_TARGET }}.img
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
