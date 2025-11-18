@@ -234,6 +234,7 @@ jobs:
       run: |
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
+        export TWRP_DEVICE_VERSION=
         if [ ${{ inputs.RECOVERY_INSTALLER }} = true ] && [ ${{ steps.recoveryinstaller.outcome == 'success' }} ]; then
           export USE_RECOVERY_INSTALLER=true
           export RECOVERY_INSTALLER_PATH=bootable/recovery/installer
@@ -246,6 +247,7 @@ jobs:
       run: |
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
+        export TWRP_DEVICE_VERSION="Made by Onish"
         if [ ${{ inputs.RECOVERY_INSTALLER }} = true ] && [ ${{ steps.recoveryinstaller.outcome == 'success' }} ]; then
           export USE_RECOVERY_INSTALLER=true
           export RECOVERY_INSTALLER_PATH=bootable/recovery/installer
