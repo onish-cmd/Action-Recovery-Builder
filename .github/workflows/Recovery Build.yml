@@ -26,7 +26,7 @@ on:
       DEVICE_PATH:
         description: Path the device tree should be synced to, relative to source root
         required: true
-        default: device/lenovo/YTX705 # <--- SET for YT-X705X
+        default: device/lenovo/YT-X705X # <--- SET for YT-X705X
       DEVICE_NAME:
         description: Device Name from tree (should match name on twrp_<DEVICE_NAME>.mk)
         required: true
