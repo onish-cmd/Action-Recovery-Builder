@@ -22,7 +22,7 @@ on:
       DEVICE_TREE_BRANCH:
         description: Device Tree Branch
         required: true
-        default: 'android-9.0' # <--- QUOTED and SET to repo's branch
+        default: 'main' # <--- QUOTED and SET to repo's branch
       DEVICE_PATH:
         description: Path the device tree should be synced to, relative to source root
         required: true
