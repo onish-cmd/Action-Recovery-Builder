@@ -18,7 +18,7 @@ on:
       DEVICE_TREE_URL:
         description: Device Tree URL
         required: true
-        default: https://github.com/burn-sie/twrp_device_lenovo_YTX705 # <--- SET for YT-X705X
+        default: https://github.com/onish-cmd/devicetree # <--- SET for YT-X705X
       DEVICE_TREE_BRANCH:
         description: Device Tree Branch
         required: true
