@@ -182,8 +182,7 @@ jobs:
         steps.buildtree.outputs.value == 'omni'
         || steps.syncdevicedeps.outcome == 'failure'
       run: |
-        # Note: 'omni' dependencies script path might need adjustment based on the repo structure.
-        bash ${GITHUB_WORKSPACE}/scripts/convert.sh ${{ inputs.DEVICE_PATH }}/${{ steps.buildtree.outputs.value }}.dependencies
+        # Skip dependency script since device has no external dependencies
         repo sync -j$(nproc --all)
       working-directory: workspace
       continue-on-error: true
