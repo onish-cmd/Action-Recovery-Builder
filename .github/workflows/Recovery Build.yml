@@ -177,6 +177,18 @@ jobs:
       id: syncdevicedeps
       continue-on-error: true
 
+    - name: Sync Device Dependencies (Omni/subdevices)
+      if: |
+          steps.buildtree.outputs.value == 'omni'
+          || steps.syncdevicedeps.outcome == 'failure'
+      run: |
+          # Note: 'omni' dependencies script path might need adjustment based on the repo structure.
+          bash ${GITHUB_WORKSPACE}/scripts/convert.sh ${{ inputs.DEVICE_PATH }}/${{ steps.buildtree.outputs.value }}.dependencies
+          repo sync -j$(nproc --all)
+      working-directory: workspace
+      continue-on-error: true
+      
+
     - name: Repopick Gerrit patches
       if: inputs.REPOPICK_PATCHES != null
       run: |
