@@ -50,6 +50,13 @@ on:
         required: true
         default: false
 
+      FORCE_DEPENDENCY_SYNC:
+        description: Set to true to force running the dependency sync script (Required if you add omni.dependencies)
+        type: boolean
+        required: true
+        default: false
+        
+
 jobs:
   build:
     if: github.event.repository.owner.id == github.event.sender.id
@@ -178,15 +185,18 @@ jobs:
       continue-on-error: true
 
     - name: Sync Device Dependencies (Omni/subdevices)
+      # This step only runs if:
+      # 1. The build tree output is confirmed as 'omni' AND
+      # 2. The user has explicitly set the FORCE_DEPENDENCY_SYNC input to true.
       if: |
-          steps.buildtree.outputs.value == 'omni'
-          || steps.syncdevicedeps.outcome == 'failure'
+        steps.buildtree.outputs.value == 'omni' && inputs.FORCE_DEPENDENCY_SYNC == true 
       run: |
-          # Note: 'omni' dependencies script path might need adjustment based on the repo structure.
-          bash ${GITHUB_WORKSPACE}/scripts/convert.sh ${{ inputs.DEVICE_PATH }}/${{ steps.buildtree.outputs.value }}.dependencies
-          repo sync -j$(nproc --all)
+        # Run the dependency script only when forced
+        bash ${GITHUB_WORKSPACE}/scripts/convert.sh ${{ inputs.DEVICE_PATH }}/${{ steps.buildtree.outputs.value }}.dependencies
+        repo sync -j$(nproc --all)
       working-directory: workspace
       continue-on-error: true
+
       
 
     - name: Repopick Gerrit patches
