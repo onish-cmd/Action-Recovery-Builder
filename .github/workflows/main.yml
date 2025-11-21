@@ -1,0 +1,182 @@
+name: Continuous Self-Triggering Website Reporter
+
+# --- Triggers ---
+# We ONLY allow manual triggering. The workflow will then trigger itself recursively.
+on:
+  workflow_dispatch:
+
+jobs:
+  generate_and_deploy_report:
+    runs-on: ubuntu-latest
+    
+    # Give the job necessary permissions to read workflow runs and write (to dispatch a new run)
+    permissions:
+      contents: write # Needed for gh-pages deployment
+      actions: write  # Crucial: Needed to trigger the next workflow run
+      
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Fetch Data, Generate HTML, and Deploy to Pages
+        uses: actions/github-script@v7
+        id: report_and_deploy
+        with:
+          # Use the GITHUB_TOKEN for API calls and deployment
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+          # This script handles all the logic: data fetching, HTML generation, and writing the file.
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const core = require('@actions/core');
+
+            // --- 1. Fetch the 5 most recent workflow runs (Excluding the current run) ---
+            const runs = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 5,
+              exclude_pull_requests: true
+            });
+            
+            let runsData = runs.data.workflow_runs;
+            runsData = runsData.filter(run => run.id !== context.runId);
+
+            let reportHtml = '';
+            
+            // --- 2. Build Report HTML ---
+            if (runsData.length === 0) {
+                reportHtml = '<p>No recent workflow runs found to analyze.</p>';
+            } else {
+                reportHtml += `
+                    <p class="mb-6 text-gray-700">Displaying status for the ${runsData.length} most recent workflow runs.</p>
+                    <div class="grid gap-4">
+                `;
+
+                runsData.forEach(run => {
+                    let statusColor = 'bg-gray-200 text-gray-800';
+                    let statusIcon = '⚙️'; 
+                    let conclusionText = 'In Progress...';
+                    let isSuccess = false;
+                    
+                    if (run.status === 'completed') {
+                        conclusionText = run.conclusion;
+                        switch (run.conclusion) {
+                            case 'success':
+                                statusColor = 'bg-green-100 text-green-700 border-green-500 border-l-green-500';
+                                statusIcon = '✅';
+                                isSuccess = true;
+                                break;
+                            case 'failure':
+                            case 'cancelled':
+                            case 'timed_out':
+                                statusColor = 'bg-red-100 text-red-700 border-l-red-500';
+                                statusIcon = '❌';
+                                break;
+                            default:
+                                statusColor = 'bg-yellow-100 text-yellow-700 border-l-yellow-500';
+                                statusIcon = '⚠️';
+                        }
+                    }
+
+                    // Card for the individual run
+                    reportHtml += `
+                        <div class="p-4 border-l-4 rounded-lg shadow-sm ${statusColor}">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-bold truncate">${statusIcon} ${run.name || run.workflow_id}</h3>
+                                <span class="text-sm font-semibold">${conclusionText.toUpperCase()}</span>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                Triggered by: ${run.triggering_actor.login} at ${new Date(run.created_at).toLocaleTimeString()}
+                            </div>
+                            <div class="mt-2">
+                                <a href="${run.html_url}" target="_blank" class="text-sm font-medium hover:underline ${isSuccess ? 'text-green-600' : 'text-blue-600'}">
+                                    View Logs & Details
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                });
+                reportHtml += `</div>`;
+            }
+
+            // --- 3. Finalize and Write HTML ---
+            const finalHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>30-Second Bot Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .container { max-width: 90%; margin: 40px auto; }
+        @media (min-width: 640px) {
+            .container { max-width: 800px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container bg-white p-6 sm:p-8 rounded-xl shadow-2xl">
+        <header class="mb-8 border-b pb-4">
+            <h1 class="text-3xl font-extrabold text-purple-700">Near Real-Time Status Report</h1>
+            <p class="text-sm text-gray-500">
+                Updates approximately every 40 seconds using a recursive GitHub Actions loop.
+            </p>
+            <p class="text-sm text-gray-500">
+                Last website update: ${new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'medium' })}
+            </p>
+        </header>
+
+        ${reportHtml}
+
+        <footer class="mt-8 pt-4 border-t text-center text-sm text-gray-400">
+            Automated by Self-Looping Workflow Bot
+        </footer>
+    </div>
+</body>
+</html>
+            `;
+
+            const deployDir = 'report_site';
+            const filePath = path.join(deployDir, 'index.html');
+            
+            if (!fs.existsSync(deployDir)) {
+                fs.mkdirSync(deployDir);
+            }
+            fs.writeFileSync(filePath, finalHtml);
+            
+            core.setOutput('deploy_path', deployDir);
+
+      - name: Deploy Report to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ${{ steps.report_and_deploy.outputs.deploy_path }}
+          publish_branch: gh-pages
+          commit_message: "Recursive Report Update [CI]"
+
+      - name: Delay and Self-Dispatch Next Run (The Bot Loop)
+        uses: actions/github-script@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // 1. Log the wait time
+            console.log("Waiting for 30 seconds before dispatching the next run...");
+            
+            // 2. Introduce a 30-second delay (30000 milliseconds)
+            // This is crucial to prevent the workflow from spinning too fast and hitting rate limits.
+            await new Promise(r => setTimeout(r, 30000)); 
+            
+            console.log("Dispatching next run...");
+            
+            // 3. Dispatch a new instance of this same workflow
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'recursive-reporter.yml', // The name of this file
+              ref: context.ref, // Use the current branch (e.g., 'main' or 'master')
+            });
+            console.log("New workflow run dispatched successfully!");
