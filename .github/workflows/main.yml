@@ -1,7 +1,6 @@
 name: Continuous Self-Triggering Website Reporter
 
 # --- Triggers ---
-# We ONLY allow manual triggering. The workflow will then trigger itself recursively.
 on:
   workflow_dispatch:
 
@@ -9,10 +8,9 @@ jobs:
   generate_and_deploy_report:
     runs-on: ubuntu-latest
     
-    # Give the job necessary permissions to read workflow runs and write (to dispatch a new run)
     permissions:
-      contents: write # Needed for gh-pages deployment
-      actions: write  # Crucial: Needed to trigger the next workflow run
+      contents: write
+      actions: write
       
     steps:
       - name: Checkout Repository
@@ -24,13 +22,13 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           
-          # The entire block below is now correctly indented for YAML.
+          # The indentation here is crucial. The script content must be consistent.
           script: |
             const fs = require('fs');
             const path = require('path');
             const core = require('@actions/core');
 
-            // --- 1. Fetch the 5 most recent workflow runs (Excluding the current run) ---
+            // --- 1. Fetch data ---
             const runs = await github.rest.actions.listWorkflowRunsForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -48,9 +46,9 @@ jobs:
                 reportHtml = '<p class="text-gray-500">No recent workflow runs found to analyze.</p>';
             } else {
                 reportHtml += `
-                    <p class="mb-6 text-gray-700">Displaying status for the ${runsData.length} most recent workflow runs.</p>
-                    <div class="grid gap-4">
-                `;
+<p class="mb-6 text-gray-700">Displaying status for the ${runsData.length} most recent workflow runs.</p>
+<div class="grid gap-4">
+`;
 
                 runsData.forEach(run => {
                     let statusColor = 'bg-gray-200 text-gray-800';
@@ -80,27 +78,28 @@ jobs:
 
                     // Card for the individual run
                     reportHtml += `
-                        <div class="p-4 border-l-4 rounded-lg shadow-sm ${statusColor}">
-                            <div class="flex items-center justify-between">
-                                <h3 class="text-lg font-bold truncate">${statusIcon} ${run.name || run.workflow_id}</h3>
-                                <span class="text-sm font-semibold">${conclusionText.toUpperCase()}</span>
-                            </div>
-                            <div class="text-xs text-gray-500 mt-1">
-                                Triggered by: ${run.triggering_actor.login} at ${new Date(run.created_at).toLocaleTimeString()}
-                            </div>
-                            <div class="mt-2">
-                                <a href="${run.html_url}" target="_blank" class="text-sm font-medium hover:underline ${isSuccess ? 'text-green-600' : 'text-blue-600'}">
-                                    View Logs & Details
-                                </a>
-                            </div>
-                        </div>
-                    `;
+<div class="p-4 border-l-4 rounded-lg shadow-sm ${statusColor}">
+    <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold truncate">${statusIcon} ${run.name || run.workflow_id}</h3>
+        <span class="text-sm font-semibold">${conclusionText.toUpperCase()}</span>
+    </div>
+    <div class="text-xs text-gray-500 mt-1">
+        Triggered by: ${run.triggering_actor.login} at ${new Date(run.created_at).toLocaleTimeString()}
+    </div>
+    <div class="mt-2">
+        <a href="${run.html_url}" target="_blank" class="text-sm font-medium hover:underline ${isSuccess ? 'text-green-600' : 'text-blue-600'}">
+            View Logs & Details
+        </a>
+    </div>
+</div>
+`;
                 });
                 reportHtml += `</div>`;
             }
 
             // --- 3. Finalize and Write HTML ---
-            // The template literal content starts here.
+            // CRITICAL: All lines of the HTML template literal start at the first character position 
+            // inside the backticks to avoid YAML confusion.
             const finalHtml = `
 <!DOCTYPE html>
 <html lang="en">
@@ -138,7 +137,7 @@ jobs:
     </div>
 </body>
 </html>
-            `;
+`;
 
             const deployDir = 'report_site';
             const filePath = path.join(deployDir, 'index.html');
@@ -175,7 +174,7 @@ jobs:
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: 'main.yml', // Using main.yml as per your screenshot
+              workflow_id: 'main.yml',
               ref: context.ref,
             });
             console.log("New workflow run dispatched successfully!");
