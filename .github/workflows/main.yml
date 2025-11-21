@@ -25,7 +25,7 @@ jobs:
           # Use the GITHUB_TOKEN for API calls and deployment
           token: ${{ secrets.GITHUB_TOKEN }}
           
-          # This script handles all the logic: data fetching, HTML generation, and writing the file.
+          # CRITICAL: Ensure the entire block below is indented correctly under 'script: |'
           script: |
             const fs = require('fs');
             const path = require('path');
@@ -167,7 +167,6 @@ jobs:
             console.log("Waiting for 30 seconds before dispatching the next run...");
             
             // 2. Introduce a 30-second delay (30000 milliseconds)
-            // This is crucial to prevent the workflow from spinning too fast and hitting rate limits.
             await new Promise(r => setTimeout(r, 30000)); 
             
             console.log("Dispatching next run...");
@@ -176,7 +175,7 @@ jobs:
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: 'recursive-reporter.yml', // The name of this file
-              ref: context.ref, // Use the current branch (e.g., 'main' or 'master')
+              workflow_id: 'recursive-reporter.yml',
+              ref: context.ref,
             });
             console.log("New workflow run dispatched successfully!");
